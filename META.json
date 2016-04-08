@@ -49,6 +49,7 @@
       },
       "test" : {
          "requires" : {
+            "Test::Builder::Module" : "0",
             "Test::More" : "0.98"
          }
       }
