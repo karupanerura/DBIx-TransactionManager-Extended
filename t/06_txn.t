@@ -46,7 +46,17 @@ subtest 'DESTROY' => sub {
     }
     is $dbh->called_count('rollback'), 1, 'success to rollback';
     is @warn, 1, 'a warning was found';
-    like $warn[0], qr/Guard created at $file line $line/;
+    like $warn[0], qr/Guard created at $file line $line/, 'caller is collect';
+
+    subtest 'modified caller' => sub {
+        my $dbh = create_mock_dbh();
+        my $manager = DBIx::TransactionManager::Extended->new($dbh);
+        @warn = ();
+        $manager->txn_scope(caller => [__PACKAGE__, '/path/to/caller.pl', 999]);
+        is @warn, 1, 'a warning was found';
+        like $warn[0], qr!Guard created at /path/to/caller.pl line 999!, 'caller is modified'
+            or diag explain \@warn;
+    };
 };
 
 subtest context_data => sub {
