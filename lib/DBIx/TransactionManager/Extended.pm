@@ -34,23 +34,22 @@ sub txn_scope { DBIx::TransactionManager::Extended::Txn->new(@_) }
 # override
 sub txn_commit {
     my $self = shift;
+    return $self->SUPER::txn_commit() if @{ $self->active_transactions } != 1;
 
-    my $context_data = $self->{_context_data};
-    my $last = @{ $self->active_transactions } == 1;
+    my $context_data        = $self->{_context_data};
+    my $hooks_before_commit = $self->{_hooks_before_commit};
+    my $hooks_after_commit  = $self->{_hooks_after_commit};
 
-    if ($last) {
-        my $hooks = $self->{_hooks_before_commit};
-        if (@$hooks) {
-            eval { $_->($context_data) for @$hooks };
-            if ($@) {
-                $self->txn_rollback();
-                croak $@;
-            }
-            @$hooks = ();
+    if (@$hooks_before_commit) {
+        eval { $_->($context_data) for @$hooks_before_commit };
+        if ($@) {
+            $self->txn_rollback();
+            croak $@;
         }
+        @$hooks_before_commit = ();
     }
 
-    eval {
+    my $ret = eval {
         $self->SUPER::txn_commit();
     };
     if ($@) {
@@ -58,21 +57,20 @@ sub txn_commit {
         croak $@;
     }
 
-    if ($last) {
-        my $hooks = $self->{_hooks_after_commit};
-        if (@$hooks) {
-            local $self->{_in_commit_after_hook} = $self->{_in_commit_after_hook} + 1;
-            if ($self->{_in_commit_after_hook} == 1) {
-                eval { $_->($context_data) for @$hooks };
-                if ($@) {
-                    $self->_reset_all();
-                    croak $@;
-                }
-                @$hooks = ();
+    if (@$hooks_after_commit) {
+        local $self->{_in_commit_after_hook} = $self->{_in_commit_after_hook} + 1;
+        if ($self->{_in_commit_after_hook} == 1) {
+            eval { $_->($context_data) for @$hooks_after_commit };
+            if ($@) {
+                $self->_reset_all();
+                croak $@;
             }
+            @$hooks_after_commit = ();
         }
-        %$context_data = ();
     }
+    %$context_data = ();
+
+    return $ret;
 }
 
 # override
