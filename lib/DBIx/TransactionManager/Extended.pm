@@ -15,9 +15,10 @@ sub new { shift->SUPER::new(@_)->_initialize }
 
 sub _initialize {
     my $self = shift;
-    $self->{_context_data}        = {};
-    $self->{_hooks_before_commit} = [];
-    $self->{_hooks_after_commit}  = [];
+    $self->{_in_commit_after_hook} = 0;
+    $self->{_context_data}         = {};
+    $self->{_hooks_before_commit}  = [];
+    $self->{_hooks_after_commit}   = [];
     $self;
 }
 
@@ -60,12 +61,15 @@ sub txn_commit {
     if ($last) {
         my $hooks = $self->{_hooks_after_commit};
         if (@$hooks) {
-            eval { $_->($context_data) for @$hooks };
-            if ($@) {
-                $self->_reset_all();
-                croak $@;
+            local $self->{_in_commit_after_hook} = $self->{_in_commit_after_hook} + 1;
+            if ($self->{_in_commit_after_hook} == 1) {
+                eval { $_->($context_data) for @$hooks };
+                if ($@) {
+                    $self->_reset_all();
+                    croak $@;
+                }
+                @$hooks = ();
             }
-            @$hooks = ();
         }
         %$context_data = ();
     }

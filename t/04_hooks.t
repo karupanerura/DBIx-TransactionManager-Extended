@@ -132,4 +132,36 @@ subtest 'dead at after commit hook' => sub {
     is $@, '', 'hooks are removed after commit';
 };
 
+subtest 'cycle calls' => sub {
+    my $dbh = create_mock_dbh();
+    my $manager = DBIx::TransactionManager::Extended->new($dbh);
+
+    for my $type1 (qw/before after/) {
+        my $method1 = "add_hook_${type1}_commit";
+        for my $type2 (qw/before after/) {
+            my $method2 = "add_hook_${type2}_commit";
+
+            my $i = 1;
+            my $called = 0;
+            my $code; $code = sub {
+                $manager->txn_begin();
+                $manager->$method1(sub {
+                    $called++;
+                    $manager->txn_begin();
+                    $manager->$method2(sub {
+                        $called++;
+                        $code->() if $i++ < 4;
+                    });
+                    $manager->txn_commit();
+                });
+                $manager->txn_commit();
+            };
+            $code->();
+            undef $code;
+
+            is $called, 8, "should run $type1->$type2->$type1->... hooks"
+        }
+    }
+};
+
 done_testing;
