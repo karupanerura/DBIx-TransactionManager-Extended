@@ -37,16 +37,16 @@ sub txn_commit {
     return $self->SUPER::txn_commit() if @{ $self->active_transactions } != 1;
 
     my $context_data        = $self->{_context_data};
-    my $hooks_before_commit = $self->{_hooks_before_commit};
-    my $hooks_after_commit  = $self->{_hooks_after_commit};
+    my @hooks_before_commit = @{ $self->{_hooks_before_commit} };
+    my @hooks_after_commit  = @{ $self->{_hooks_after_commit} };
 
-    if (@$hooks_before_commit) {
-        eval { $_->($context_data) for @$hooks_before_commit };
+    if (@hooks_before_commit) {
+        eval { $_->($context_data) for @hooks_before_commit };
         if ($@) {
             $self->txn_rollback();
             croak $@;
         }
-        @$hooks_before_commit = ();
+        $self->{_hooks_before_commit} = [];
     }
 
     my $ret = eval {
@@ -57,15 +57,15 @@ sub txn_commit {
         croak $@;
     }
 
-    if (@$hooks_after_commit) {
+    if (@hooks_after_commit) {
         local $self->{_in_commit_after_hook} = $self->{_in_commit_after_hook} + 1;
         if ($self->{_in_commit_after_hook} == 1) {
-            eval { $_->($context_data) for @$hooks_after_commit };
+            eval { $_->($context_data) for @hooks_after_commit };
             if ($@) {
                 $self->_reset_all();
                 croak $@;
             }
-            @$hooks_after_commit = ();
+            $self->{_hooks_after_commit} = [];
         }
     }
     %$context_data = ();
@@ -211,4 +211,3 @@ it under the same terms as Perl itself.
 karupanerura E<lt>karupa@cpan.orgE<gt>
 
 =cut
-
