@@ -16,6 +16,7 @@ sub new { shift->SUPER::new(@_)->_initialize }
 sub _initialize {
     my $self = shift;
     $self->{_in_commit_after_hook} = 0;
+    $self->{_on_rollback}          = 0;
     $self->{_context_data}         = {};
     $self->{_hooks_before_commit}  = [];
     $self->{_hooks_after_commit}   = [];
@@ -46,7 +47,8 @@ sub txn_commit {
             $self->txn_rollback();
             croak $@;
         }
-        @$hooks_before_commit = ();
+        $self->_reset_all() if $self->{_on_rollback};
+        $self->{_hooks_before_commit} = [];
     }
 
     my $ret = eval {
@@ -65,7 +67,8 @@ sub txn_commit {
                 $self->_reset_all();
                 croak $@;
             }
-            @$hooks_after_commit = ();
+            $self->_reset_all() if $self->{_on_rollback};
+            $self->{_hooks_after_commit} = [];
         }
     }
     %$context_data = ();
@@ -211,4 +214,3 @@ it under the same terms as Perl itself.
 karupanerura E<lt>karupa@cpan.orgE<gt>
 
 =cut
-
