@@ -4,13 +4,13 @@
       "karupanerura <karupa@cpan.org>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Minilla/v3.0.1, CPAN::Meta::Converter version 2.150001",
+   "generated_by" : "Minilla/v3.0.14, CPAN::Meta::Converter version 2.150010",
    "license" : [
       "perl_5"
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
-      "version" : "2"
+      "version" : 2
    },
    "name" : "DBIx-TransactionManager-Extended",
    "no_index" : {
@@ -44,7 +44,7 @@
          "requires" : {
             "DBIx::TransactionManager" : "0",
             "parent" : "0",
-            "perl" : "5.008001"
+            "perl" : "5.010001"
          }
       },
       "test" : {
@@ -66,5 +66,9 @@
          "web" : "https://github.com/karupanerura/DBIx-TransactionManager-Extended"
       }
    },
-   "version" : "0.02"
+   "version" : "0.02",
+   "x_contributors" : [
+      "mizuki_r <ry.mizuki@gmail.com>"
+   ],
+   "x_serialization_backend" : "JSON::PP version 2.97001"
 }
