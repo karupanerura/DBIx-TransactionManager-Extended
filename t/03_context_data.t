@@ -1,3 +1,4 @@
+
 use strict;
 use warnings;
 
@@ -32,11 +33,13 @@ subtest 'reset context data at commit/rollback' => sub {
     is_deeply $context_data, {}, 'should reset the context data at commit';
 
     $manager->txn_begin();
+    $context_data = $manager->context_data;
     $manager->context_data->{c}++;
     $manager->txn_rollback();
     is_deeply $context_data, {}, 'should reset the context data at rollback';
 
     $manager->txn_begin();
+    $context_data = $manager->context_data;
     $manager->txn_begin();
     $manager->context_data->{c}++;
     $manager->txn_commit();
